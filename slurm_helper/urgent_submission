@@ -1,0 +1,37 @@
+#!/bin/bash
+
+export PATH=$PATH:/${REPLAY_USER}/slurmR/bin:/${REPLAY_USER}/slurmR/sbin:/${REPLAY_USER}/slurm-replay/submitter:/${REPLAY_USER}/slurmR/slurm_helper
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/${REPLAY_USER}/slurmR/lib:/${REPLAY_USER}/slurm-replay/distime
+
+REPLAY_LIB="LD_PRELOAD=libwtime.so"
+
+TICKER_SUBMIT_VAL="1551759344"
+
+val=$(ticker -g | cut -d ' ' -f1)
+while (( $val < $TICKER_SUBMIT_VAL )); do
+val=$(ticker -g | cut -d ' ' -f1)
+# every 5 minutes with a clock rate of 0.06
+sleep 18
+done
+
+echo "Starting submission of urgent computing at $(ticker -g)"
+
+CONSTRAINT="gpu"
+NNODES="100"
+NAME="UC"
+NTIMES="10"
+SCRIPT="/$REPLAY_USER/slurmR/slurm_helper/urgent.sbatch"
+
+for k in $(seq 1 1 $NTIMES); do
+	eval "$REPLAY_LIB sbatch \
+	    -C $CONSTRAINT \
+	    -N $NNODES \
+	    --output=/tmp/ucjob-%j.out \
+	    --error=/tmp/ucjob-%j.err \
+	    --job-name ${NAME}-${k} \
+            --time 24:00:00 \
+	    $SCRIPT $NAME"
+done
+
+echo "Submission completed at $(ticker -g)"
+

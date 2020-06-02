@@ -1,0 +1,10 @@
+#!/bin/bash
+
+SLURM_DIR="/$REPLAY_USER/slurmR"
+SLURM_REPLAY="/$REPLAY_USER/slurm-replay"
+export PATH=$SLURM_DIR/bin:$SLURM_DIR/sbin:$SLURM_REPLAY/submitter:$PATH
+export LD_LIBRARY_PATH=$SLURM_DIR/lib:$SLURM_REPLAY/distime
+export DISTIME_SHMEMCLOCK_NAME="${DISTIME_SHMEMCLOCK_NAME}"
+
+# Do not use srun, steps are not considered
+nice -n 25 job_runner -d $((24*3600)) -x 0 -r 0.06

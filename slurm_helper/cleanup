@@ -1,0 +1,37 @@
+#!/bin/bash
+
+REQUESTNAME="$1"
+
+export LD_LIBRARY_PATH="/$REPLAY_USER/slurm-replay/distime:$LD_LIBRARY_PATH"
+REPLAY_LIB="LD_PRELOAD=libwtime.so"
+
+# cleanup reservation
+if [[ ! -z "$REQUESTNAME" ]]; then
+   eval "$REPLAY_LIB scontrol show res $REQUESTNAME" > /dev/null 2>&1
+   if [[ $? -eq 0 ]]; then
+      output_res="|Found reservation: ${REQUESTNAME}"
+      eval "$REPLAY_LIB scontrol -Q delete reservation=${REQUESTNAME}"
+      if [[ $? -ne 0 ]]; then
+         output_res="$output_res|Reservation ${REQUESTNAME} not removed."
+      else
+         output_res="$output_res|Reservation ${REQUESTNAME} removed."
+      fi
+      sleep 2
+   fi
+fi
+
+# cleanup job
+if [[ ! -z "$REQUESTNAME" ]]; then
+    out=$(eval "$REPLAY_LIB squeue -h --name $REQUESTNAME")
+    if [[ ! -z "$out" ]]; then
+       output_cancel="|Found jobs: $out"
+       eval "$REPLAY_LIB scancel --name $REQUESTNAME" > /dev/null 2>&1
+       output_cancel="$output_cancel|Canceling jobs return $?"
+       sleep 2
+    fi
+fi
+
+
+echo "${output_res}${output_cancel}"
+exit 0
+

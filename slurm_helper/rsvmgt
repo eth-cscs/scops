@@ -1,0 +1,127 @@
+#!/bin/bash
+
+# original by Nick Cardo
+# modified by Mark Klein
+
+export LD_LIBRARY_PATH="/$REPLAY_USER/slurm-replay/distime:$LD_LIBRARY_PATH"
+REPLAY_LIB="LD_PRELOAD=libwtime.so"
+
+GetNodeList()
+{
+    rsv=$1
+
+    if [[ $CreateRes -eq 1 ]] ; then
+        echo ""
+        exit
+    fi
+    ndlst=$(eval "$REPLAY_LIB scontrol show res $rsv" | grep Nodes= | awk '{print $1}' | cut -f 2 -d =)
+    if [[ $? -ne 0 ]] ; then
+        echo "scontrol show reservation $rsv failed" >&2
+        exit 1
+    fi
+    if [[ ! -z $ndlst ]]
+    then
+    ndlst=$(hostlist -c $ndlst)
+    fi
+    if [[ $? -ne 0 ]] ; then
+        echo "hostlist -c $ndlst for $rsv failed" >&2
+        exit 1
+    fi
+
+    echo $ndlst
+}
+
+UpdateRes()
+{
+    rsv=$1
+    lst=$2
+
+    if [[ "$lst" = "" ]] ; then
+        #echo "scontrol delete reservation=$rsv"
+        eval "$REPLAY_LIB scontrol -Q delete reservation=$rsv"
+
+    else
+        nodelist=$(hostlist -c  ${lst})
+
+        if [[ $CreateRes -eq 0 ]] ; then
+            eval "$REPLAY_LIB scontrol -Q update reservation=$rsv nodes=$nodelist"
+        else
+            eval "$REPLAY_LIB scontrol -Q create reservation=$rsv flags=ignore_jobs user=$REPLAY_USER starttime=now duration=infinite nodes=$nodelist"
+        fi
+    fi
+
+    if [[ $? -ne 0 ]] ; then
+        if [[ "$lst" = "" ]] ; then
+            echo "scontrol delete reservation=$rsv failed"
+        elif [[ $CreateRes -eq 0 ]] ; then
+            echo "scontrol create reservation=$rsv failed"
+        else
+            echo "scontrol update reservation=$rsv failed" >&2
+        fi
+        exit 1
+    fi
+}
+
+BuildNodeList()
+{
+    nds=$2
+    lst=$3
+
+    if [[ "$1" = "+" ]] ; then
+        # Add to list
+        lst=$(hostlist -u $nds $lst)
+
+    elif [[ "$1" = "-" ]] ; then
+        # Remove from list
+        lst=$(hostlist -d $lst $nds)
+    fi
+
+    echo $lst
+}
+
+DestResExists()
+{
+    d=$1
+    eval "$REPLAY_LIB scontrol show res $d" > /dev/null 2>&1
+    if [[ $? -eq 0 ]] ; then
+        CreateRes=0
+    else
+        CreateRes=1
+    fi
+}
+
+rsv=$1
+action=$2
+ndsin=`echo $3`
+
+DestResExists $rsv
+
+#
+#  add nodes to a reservation
+#
+if [[ "$action" = "+" ]] ; then
+    dstlst=`GetNodeList $rsv`
+    ndlist=`BuildNodeList + $ndsin $dstlst`
+    UpdateRes "$rsv" "$ndlist"
+    exit
+fi
+
+#
+#  remove nodes from a reservation
+#
+if [[ "$action" = "-" ]] ; then
+    dstlst=`GetNodeList $rsv`
+    ndlist=`BuildNodeList - $ndsin $dstlst`
+    UpdateRes "$rsv" "$ndlist"
+    exit
+fi
+
+#
+#  remove a reservation
+#
+if [[ "$action" = "rm" ]] ; then
+    if [[ $CreateRes -eq 0 ]] ; then
+       UpdateRes "$rsv" ""
+       exit
+    fi
+fi

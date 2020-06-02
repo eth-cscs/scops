@@ -1,0 +1,51 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH="/$REPLAY_USER/slurm-replay/distime:$LD_LIBRARY_PATH"
+REPLAY_LIB="LD_PRELOAD=libwtime.so"
+
+DestResExists()
+{
+    d=$1
+    eval "$REPLAY_LIB scontrol show res $d" > /dev/null 2>&1
+    if [[ $? -eq 0 ]] ; then
+        CreateRes=0
+    else
+        CreateRes=1
+    fi
+}
+
+GetNodeList()
+{
+    rsv=$1
+
+    ndlst=$(eval "$REPLAY_LIB scontrol show res $rsv" | grep Nodes= | awk '{print $1}' | cut -f 2 -d =)
+    if [[ $? -ne 0 ]] ; then
+        echo "scontrol show reservation $rsv failed" >&2
+        exit 1
+    fi
+    if [[ ! -z $ndlst ]]
+    then
+    ndlst=$(hostlist -c $ndlst)
+    fi
+    if [[ $? -ne 0 ]] ; then
+        echo "hostlist -c $ndlst for $rsv failed" >&2
+        exit 1
+    fi
+
+    echo $ndlst
+}
+
+rsv=$1
+DestResExists $rsv
+
+if [[ $CreateRes -eq 0 ]] ; then
+    nodel=$(GetNodeList $rsv)
+    if [ -z "$nodel" ]; then
+        echo "No nodelist found for reservation $rsv"
+        exit 0
+    fi
+    eval "$REPLAY_LIB sinfo -n $nodel -o \"%f %N\" -h"
+else
+    echo "No reservation $rsv found."
+    exit 0
+fi

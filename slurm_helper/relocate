@@ -1,0 +1,21 @@
+#!/bin/bash
+
+CONSTRAINT="$1"
+NNODES="$2"
+NAME="$3"
+NTIMES="$4"
+SCRIPT="/$REPLAY_USER/slurmR/slurm_helper/relocate.sbatch"
+export LD_LIBRARY_PATH="/$REPLAY_USER/slurm-replay/distime:$LD_LIBRARY_PATH"
+REPLAY_LIB="LD_PRELOAD=libwtime.so"
+
+for k in $(seq 1 1 $NTIMES); do
+    eval "$REPLAY_LIB sbatch \
+        -C $CONSTRAINT \
+        -N $NNODES \
+        --dependency=singleton \
+        --nice=-2147483645 \
+        --output=/tmp/scopsjob-%j.out \
+        --error=/tmp/scopsjob-%j.err \
+        --job-name $NAME \
+        $SCRIPT $NAME"
+done
