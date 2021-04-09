@@ -1,0 +1,17 @@
+{
+    "name": "ci",
+    "group": "ci_group",
+    "node_types": [ "mc", "gpu" ],
+    "model": {
+        "pw": [ 0, 0],
+        "share": {"mc": 0, "gpu": 0},
+        "pred": "mypredfunction",
+        "pred_value": [0]
+    },
+    "deploy": {
+        "context": "..",
+        "trace": "test/ci_test_traces/my_ci.trace",
+        "template": "ci_template",
+        "nodelist": "nid[00000-00001]"
+    }
+}

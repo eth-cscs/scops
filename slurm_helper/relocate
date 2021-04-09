@@ -3,15 +3,22 @@
 CONSTRAINT="$1"
 NNODES="$2"
 NAME="$3"
-NTIMES="$4"
+JOBSIZE="$4"
 SCRIPT="/$REPLAY_USER/slurmR/slurm_helper/relocate.sbatch"
 export LD_LIBRARY_PATH="/$REPLAY_USER/slurm-replay/distime:$LD_LIBRARY_PATH"
 REPLAY_LIB="LD_PRELOAD=libwtime.so"
 
-for k in $(seq 1 1 $NTIMES); do
+arr=$(for x in $(seq 1 1 $(($NNODES/$JOBSIZE))); do echo $JOBSIZE; done)
+rest=$(($NNODES-($NNODES/$JOBSIZE)*$JOBSIZE))
+if (( "$rest" > 0 )); then
+   arr="$arr $rest"
+fi
+
+for k in $arr; do
     eval "$REPLAY_LIB sbatch \
         -C $CONSTRAINT \
-        -N $NNODES \
+        -N $k \
+	-t 24:00:00 \
         --dependency=singleton \
         --nice=-2147483645 \
         --output=/tmp/scopsjob-%j.out \

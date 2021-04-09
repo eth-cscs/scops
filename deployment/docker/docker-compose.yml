@@ -1,0 +1,50 @@
+version: '3.4'
+
+networks:
+  default:
+    external:
+      name: test-network
+
+services:
+  register:
+    container_name: register
+    build:
+      context: ../..
+      dockerfile: deployment/docker/register/Dockerfile
+      network: host
+    image: scops_register
+    ports:
+      - 12000:12000
+    volumes:
+        - ../../log/deployment/msa/register:/data
+
+  hwstate_mgr:
+    container_name: hwstate_mgr
+    build:
+      context: ../..
+      dockerfile: deployment/docker/hwstate_mgr/Dockerfile
+      network: host
+    image: scops_hwstate_mgr
+    stop_signal: SIGINT
+    depends_on:
+        - register
+    ports:
+      - 12010:12010
+    volumes:
+        - ../../log/deployment/msa/hwstate_mgr:/data
+
+  elastic:
+    container_name: elastic
+    build:
+      context: ../..
+      dockerfile: deployment/docker/elastic/Dockerfile
+      network: host
+    image: scops_elastic
+    command: -l "ce_uzh,pt_mr"
+    depends_on:
+        - register
+        - hwstate_mgr
+    volumes:
+        - ../../log/deployment/msa/elastic:/data
+        - ../../test/ci_test_config:/ci_config
+

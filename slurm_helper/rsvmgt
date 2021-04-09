@@ -56,7 +56,7 @@ UpdateRes()
         elif [[ $CreateRes -eq 0 ]] ; then
             echo "scontrol create reservation=$rsv failed"
         else
-            echo "scontrol update reservation=$rsv failed" >&2
+            echo "scontrol update reservation=$rsv nodes=${nodelist} failed" >&2
         fi
         exit 1
     fi

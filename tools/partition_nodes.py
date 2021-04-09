@@ -2,9 +2,9 @@ from hostlist import expand_hostlist, collect_hostlist
 import random
 
 # from partition "normal"
-mc_nodes="your list here"
+mc_nodes="nid[00004-00007,00012-00024,00026-00062,00064-00067,00072-00126,00128-00190,00192-00195,00200-00254,00260-00318,00320-00323,00328-00382,00388-00446,00456-00510,00516-00574,00576-00579,00584-00638,00644-00702,00704-00707,00712-00766,00772-00830,00832-00835,00840-00894,00900-00958,00960-00963,00968-01022,01028-01086,01088-01150,01152-01192,01194-01214,01216-01278,01280-01723]"
 
-gpu_nodes="your list here"
+gpu_nodes="nid[01928-01935,01940-01967,01972-02319,02324-02351,02356-02703,02708-02735,02740-03087,03092-03119,03124-03471,03476-03503,03512-03855,03860-03887,03892-04239,04244-04271,04280-07679]"
 
 
 exp_mc = expand_hostlist(mc_nodes)
@@ -16,22 +16,22 @@ total_gpu = len(exp_gpu)
 print("# MC nodes: %d" % (total_mc))
 print("# GPU nodes: %d" % (total_gpu))
 
-ci=[ 'CI',  'PT_em', 'PT_eth', 'PT_mr', 'PT_u', 'PA_pr', 'PA_ul', 'PA_rest', 'CE_ich', 'CE_uzh' ]
-ci_mc=[  1/9, 1/9, 1/9, 1/9, 1/9, 0.0, 1/9, 1/9, 1/9, 1/9 ]
-ci_gpu=[ 1/5, 0.0, 1/5, 0.0, 0.0, 1/5, 1/5, 1/5, 0.0, 0.0 ]
+ci=[ 'pt_em', 'pt_eth', 'pt_mr', 'pt_u', 'pa_pr', 'pa_ul', 'pa_rest', 'ce_ich', 'ce_uzh' ]
+ci_mc=[  1/8, 1/8, 1/8, 1/8, 0.0, 1/8, 1/8, 1/8, 1/8 ]
+ci_gpu=[ 0.0, 1/4, 0.0, 0.0, 1/4, 1/4, 1/4, 0.0, 0.0 ]
 
 ci_nnodes=dict()
-rest_mc=0.0
-rest_gpu=0.0
+rest_mc=0
+rest_gpu=0
 for idx, c in enumerate(ci):
     n_gpu = int(ci_gpu[idx]*total_gpu)
-    rest_gpu+=ci_gpu[idx]*total_gpu-n_gpu
+    rest_gpu+=n_gpu
     n_mc = int(ci_mc[idx]*total_mc)
-    rest_mc+= ci_mc[idx]*total_mc-n_mc
+    rest_mc+=n_mc
     ci_nnodes[c]=[ n_gpu, n_mc ]
 
-rest_gpu = int(rest_gpu)
-rest_mc = int(rest_mc)
+rest_gpu = total_gpu - rest_gpu
+rest_mc = total_mc - rest_mc
 print("rest: ",rest_gpu, rest_mc)
 
 if rest_gpu != 0:
