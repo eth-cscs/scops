@@ -22,5 +22,5 @@ requests==2.25.1
 rest-shell @ git+https://github.com/treytabner/rest-shell.git@39629034ff8d7eeef604a6fab8086d5c335f82ff
 simplejson==3.17.2
 six==1.15.0
-urllib3==1.26.4
+urllib3>=1.26.5
 Werkzeug==1.0.1
